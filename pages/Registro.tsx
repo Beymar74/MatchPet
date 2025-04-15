@@ -1,13 +1,57 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 
 const Registro: React.FC = () => {
   const [sexo, setSexo] = useState<string | null>(null);
   const [interesesMascota, setInteresesMascota] = useState<string[]>([]);
+  const [form, setForm] = useState({
+    nombre: '',
+    usuario: '',
+    email: '',
+    password: '',
+    confirmarPassword: ''
+  });
+  const [errors, setErrors] = useState<string[]>([]);
+  const [fotosSubidas, setFotosSubidas] = useState<number>(0);
+
+  const router = useRouter();
 
   const toggleInteresMascota = (tipo: string) => {
     setInteresesMascota((prev) =>
       prev.includes(tipo) ? prev.filter((i) => i !== tipo) : [...prev, tipo]
     );
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: string[] = [];
+
+    if (!form.nombre) newErrors.push('Nombre completo requerido.');
+    if (!form.usuario) newErrors.push('Usuario requerido.');
+    if (!validateEmail(form.email)) newErrors.push('Correo inválido.');
+    if (form.password.length < 6) newErrors.push('La contraseña debe tener al menos 6 caracteres.');
+    if (form.password !== form.confirmarPassword) newErrors.push('Las contraseñas no coinciden.');
+    if (!sexo) newErrors.push('Debe seleccionar un sexo.');
+    if (interesesMascota.length === 0) newErrors.push('Seleccione al menos un interés de mascota.');
+    if (fotosSubidas < 2) newErrors.push('Debe subir al menos 2 fotos.');
+
+    if (newErrors.length > 0) {
+      setErrors(newErrors);
+    } else {
+      router.push('/Perfil');
+    }
+  };
+
+  const handleIniciarSesion = () => {
+    router.push('/Perfil');
   };
 
   return (
@@ -27,20 +71,32 @@ const Registro: React.FC = () => {
           <h2 style={{ fontSize: '1.8rem', margin: '5px 0', color: '#000' }}>Iniciar Registro</h2>
           <p style={{ color: '#555', marginBottom: '25px' }}>MatchPet te espera!</p>
 
-          <form>
-            {['Nombre Completo', 'Usuario', 'Email', 'Contraseña', 'Confirmar Contraseña'].map((label, idx) => (
-              <div key={idx} style={{ marginBottom: '15px' }}>
-                <label style={{ color: '#C33764', display: 'block', marginBottom: '5px' }}>{label}</label>
-                <input
-                  type={label.includes('Contraseña') ? 'password' : 'text'}
-                  placeholder={`Ingrese ${label.toLowerCase()}`}
-                  style={{
-                    width: '100%', padding: '10px', border: '1px solid #D9D9D9',
-                    borderRadius: '6px', color: '#999'
-                  }}
-                />
-              </div>
-            ))}
+          {errors.length > 0 && (
+            <ul style={{ color: 'red', marginBottom: '15px' }}>
+              {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+            </ul>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {['Nombre Completo', 'Usuario', 'Email', 'Contraseña', 'Confirmar Contraseña'].map((label, idx) => {
+              const name = label.toLowerCase().replace(/ /g, '');
+              return (
+                <div key={idx} style={{ marginBottom: '15px' }}>
+                  <label style={{ color: '#C33764', display: 'block', marginBottom: '5px' }}>{label}</label>
+                  <input
+                    type={label.includes('Contraseña') ? 'password' : 'text'}
+                    placeholder={`Ingrese ${label.toLowerCase()}`}
+                    name={name}
+                    value={(form as any)[name] || ''}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%', padding: '10px', border: '1px solid #D9D9D9',
+                      borderRadius: '6px', color: '#999'
+                    }}
+                  />
+                </div>
+              );
+            })}
 
             <button type="submit" style={{
               width: '100%', padding: '12px 0', marginTop: '10px',
@@ -49,12 +105,22 @@ const Registro: React.FC = () => {
             }}>
               Registrarme
             </button>
-            <p style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.9rem' }}>
-              ¿Ya tienes una cuenta? <a href="#" style={{
-                background: 'linear-gradient(to right, #C33764, #1D2671)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textDecoration: 'none', fontWeight: 'bold'
-              }}>Iniciar Sesion</a>
-            </p>
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+              <p style={{ fontSize: '0.9rem', marginBottom: '8px' }}>¿Ya tienes una cuenta?</p>
+              <button
+                type="button"
+                onClick={handleIniciarSesion}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '25px',
+                  background: 'linear-gradient(to right, #C33764, #1D2671)',
+                  color: '#fff',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >Iniciar Sesión</button>
+            </div>
           </form>
         </div>
 
@@ -103,9 +169,9 @@ const Registro: React.FC = () => {
           <label style={labelStyle}>Añade tus fotos de Perfil</label>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
             {[1, 2].map((i) => (
-              <div key={i} style={{
+              <div key={i} onClick={() => setFotosSubidas((prev) => prev + 1)} style={{
                 backgroundColor: '#F0F0F0', borderRadius: '10px', padding: '20px',
-                border: '2px dashed #D9D9D9', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                border: '2px dashed #D9D9D9', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
               }}>
                 📸
               </div>
